@@ -9,7 +9,7 @@ from slowfast.utils.parser import load_config, parse_args
 # from demo_net import demo
 from test_net import test
 from train_net import train
-# from visualization import visualize
+# from visualization import visualize # this already being commented could mean that the visualize function is not complete.
 
 
 def main():
@@ -17,7 +17,7 @@ def main():
     Main function to spawn the train and test process.
     """
     args = parse_args()
-    cfg = load_config(args)
+    cfg = load_config(args) #loads the arguments from args.cfg_file
     cfg = assert_and_infer_cfg(cfg)
 
     # Perform training.

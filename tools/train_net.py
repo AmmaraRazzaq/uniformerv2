@@ -419,6 +419,9 @@ def train(cfg):
     if du.is_master_proc() and cfg.LOG_MODEL_INFO:
         misc.log_model_info(model, cfg, use_train_input=True)
 
+    # TODO: load the model from checkpoint if build_model function can't successfully load the model from checkpoint to resume training
+
+
     # Construct the optimizer.
     optimizer = optim.construct_optimizer(model, cfg)
 

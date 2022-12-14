@@ -8,6 +8,7 @@ import os
 import pickle
 import torch
 from iopath.common.file_io import g_pathmgr
+import torch.nn as nn
 
 import slowfast.utils.checkpoint as cu
 import slowfast.utils.distributed as du
@@ -19,7 +20,7 @@ from slowfast.models import build_model
 from slowfast.utils.meters import AVAMeter, TestMeter
 
 logger = logging.get_logger(__name__)
-
+TEST_NUM_CLASSES=400
 
 @torch.no_grad()
 def perform_test(test_loader, model, test_meter, cfg, writer=None):
@@ -167,6 +168,18 @@ def test(cfg):
 
     cu.load_test_checkpoint(cfg, model)
 
+    # modify the final layer of the model after loading it from checkpoint
+    print("modifying the final layer of the model")
+    model.backbone.transformer.proj = nn.Sequential(
+        nn.LayerNorm((768,), eps=1e-05, elementwise_affine=True),
+        nn.Dropout(p=0.5, inplace=False),
+        nn.Linear(in_features=768, out_features=TEST_NUM_CLASSES, bias=True)
+    )
+    
+    cur_device = torch.cuda.current_device()
+    model = model.cuda(device=cur_device)
+    print("modified the num_classes in the final layer")
+
     # Create video testing loaders.
     test_loader = loader.construct_loader(cfg, "test")
     logger.info("Testing model for {} iterations".format(len(test_loader)))
@@ -186,7 +199,8 @@ def test(cfg):
             test_loader.dataset.num_videos
             // (cfg.TEST.NUM_ENSEMBLE_VIEWS * cfg.TEST.NUM_SPATIAL_CROPS),
             cfg.TEST.NUM_ENSEMBLE_VIEWS * cfg.TEST.NUM_SPATIAL_CROPS,
-            cfg.MODEL.NUM_CLASSES,
+            # cfg.MODEL.NUM_CLASSES,
+            TEST_NUM_CLASSES,
             len(test_loader),
             cfg.DATA.MULTI_LABEL,
             cfg.DATA.ENSEMBLE_METHOD,
