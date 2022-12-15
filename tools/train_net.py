@@ -8,6 +8,7 @@ import pprint
 import torch
 from fvcore.nn.precise_bn import get_bn_modules, update_bn_stats
 from timm.utils import NativeScaler
+import torch.nn as nn
 
 import slowfast.models.losses as losses
 import slowfast.models.optimizer as optim
@@ -24,6 +25,7 @@ from slowfast.utils.meters import AVAMeter, EpochTimer, TrainMeter, ValMeter
 from slowfast.utils.multigrid import MultigridSchedule
 
 logger = logging.get_logger(__name__)
+NUM_CLASSES=3
 
 
 def train_epoch(
@@ -56,7 +58,8 @@ def train_epoch(
             mix_prob=cfg.MIXUP.PROB,
             switch_prob=cfg.MIXUP.SWITCH_PROB,
             label_smoothing=cfg.MIXUP.LABEL_SMOOTH_VALUE,
-            num_classes=cfg.MODEL.NUM_CLASSES,
+            # num_classes=cfg.MODEL.NUM_CLASSES,
+            num_classes=NUM_CLASSES
         )
 
     for cur_iter, (inputs, labels, _, meta) in enumerate(train_loader):
@@ -137,7 +140,7 @@ def train_epoch(
                 loss = loss.item()
             else:
                 # Compute the errors.
-                num_topks_correct = metrics.topks_correct(preds, labels, (1, 5))
+                num_topks_correct = metrics.topks_correct(preds, labels, (1, 3))
                 top1_err, top5_err = [
                     (1.0 - x / preds.size(0)) * 100.0 for x in num_topks_correct
                 ]
@@ -251,7 +254,7 @@ def eval_epoch(val_loader, model, val_meter, loss_scaler, cur_epoch, cfg, writer
                     preds, labels = du.all_gather([preds, labels])
             else:
                 # Compute the errors.
-                num_topks_correct = metrics.topks_correct(preds, labels, (1, 5))
+                num_topks_correct = metrics.topks_correct(preds, labels, (1, 3))
 
                 # Combine the errors across the GPUs.
                 top1_err, top5_err = [
@@ -353,6 +356,19 @@ def build_trainer(cfg):
     """
     # Build the video model and print model statistics.
     model = build_model(cfg)
+    
+    # modify the final layer of the model after loading it from checkpoint
+    print("modifying the final layer of the model")
+    model.backbone.transformer.proj = nn.Sequential(
+        nn.LayerNorm((768,), eps=1e-05, elementwise_affine=True),
+        nn.Dropout(p=0.5, inplace=False),
+        nn.Linear(in_features=768, out_features=NUM_CLASSES, bias=True)
+    )
+    
+    cur_device = torch.cuda.current_device()
+    model = model.cuda(device=cur_device)
+    print("modified the num_classes in the final layer")
+    
     if du.is_master_proc() and cfg.LOG_MODEL_INFO:
         misc.log_model_info(model, cfg, use_train_input=True)
 
@@ -384,7 +400,7 @@ def build_trainer(cfg):
     )
 
 
-def train(cfg):
+def train(cfg): 
     """
     Train a video model for many epochs on train set and evaluate it on val set.
     Args:
@@ -416,17 +432,34 @@ def train(cfg):
 
     # Build the video model and print model statistics.
     model = build_model(cfg)
+    
+    # modify the final layer of the model after loading it from checkpoint
+    print("modifying the final layer of the model")
+    model.backbone.transformer.proj = nn.Sequential(
+        nn.LayerNorm((768,), eps=1e-05, elementwise_affine=True),
+        nn.Dropout(p=0.5, inplace=False),
+        nn.Linear(in_features=768, out_features=NUM_CLASSES, bias=True)
+    )
+    
+    cur_device = torch.cuda.current_device()
+    model = model.cuda(device=cur_device)
+    print("modified the num_classes in the final layer")
+    
     if du.is_master_proc() and cfg.LOG_MODEL_INFO:
         misc.log_model_info(model, cfg, use_train_input=True)
 
     # TODO: load the model from checkpoint if build_model function can't successfully load the model from checkpoint to resume training
 
-
     # Construct the optimizer.
     optimizer = optim.construct_optimizer(model, cfg)
 
     # Load a checkpoint to resume training if applicable.
-    start_epoch = cu.load_train_checkpoint(cfg, model, optimizer, loss_scaler)
+    # The model gets loaded here from the checkpoint to resume the training, and the start_epoch gets updated, if start_epoch=max_epoch, the model won't train. 
+    # TODO: add an extra argument here to check if, the training should be resumed.
+    # for now I am turning off the functionality to resume training
+    
+    # start_epoch = cu.load_train_checkpoint(cfg, model, optimizer, loss_scaler)
+    start_epoch = 0
 
     # Create the video train and val loaders.
     train_loader = loader.construct_loader(cfg, "train")

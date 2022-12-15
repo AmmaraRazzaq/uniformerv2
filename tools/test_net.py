@@ -20,7 +20,7 @@ from slowfast.models import build_model
 from slowfast.utils.meters import AVAMeter, TestMeter
 
 logger = logging.get_logger(__name__)
-TEST_NUM_CLASSES=400
+TEST_NUM_CLASSES=3
 
 @torch.no_grad()
 def perform_test(test_loader, model, test_meter, cfg, writer=None):

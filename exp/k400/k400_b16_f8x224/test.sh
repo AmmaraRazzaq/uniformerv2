@@ -31,5 +31,4 @@ python tools/run_net.py \
   RNG_SEED 6666 \
   OUTPUT_DIR "/home/ammara/uniformerv2/UniFormerV2/exp/k400/k400_b16_f8x224" \
   TENSORBOARD.ENABLE True \
-  OUTPUT_DIR "/home/ammara/uniformerv2/UniFormerV2/exp/k400/k400_b16_f8x224" \
-  TEST.SAVE_RESULTS_PATH "results.pkl" 
+  TEST.SAVE_RESULTS_PATH "results.pkl"   
