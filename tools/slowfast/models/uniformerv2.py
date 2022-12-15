@@ -84,6 +84,8 @@ class Uniformerv2(nn.Module):
                     state_dict['backbone.transformer.proj.2.weight'] = state_dict['backbone.transformer.proj.2.weight'][label_map]
                     state_dict['backbone.transformer.proj.2.bias'] = state_dict['backbone.transformer.proj.2.bias'][label_map]
             self.load_state_dict(state_dict, strict=False)
+            
+        # add code here to make it compatible for different image resolution
 
     def forward(self, x):
         x = x[0]

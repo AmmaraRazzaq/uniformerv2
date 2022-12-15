@@ -368,7 +368,7 @@ def uniformerv2_b16(
     frozen=False,
 ):
     model = VisionTransformer(
-        input_resolution=224,
+        input_resolution=512,
         patch_size=16,
         width=768,
         layers=12,

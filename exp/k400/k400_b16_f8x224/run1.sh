@@ -1,7 +1,3 @@
-NUM_SHARDS=1
-NUM_GPUS=1
-BATCH_SIZE=1
-BASE_LR=1e-5
 work_path="/home/omnoai/Desktop/ammara/uniformerv2/uniformerv2/exp/k400/k400_b16_f8x224"
 PYTHONPATH="/home/omnoai/Desktop/ammara/uniformerv2/uniformerv2/slowfast" 
 python uniformerv2/tools/run_net.py \
@@ -32,4 +28,6 @@ python uniformerv2/tools/run_net.py \
   TENSORBOARD.ENABLE True \
   TEST.SAVE_RESULTS_PATH "results.pkl" \
   DATA.SAMPLING_RATE 4 \
-  DATA.NUM_FRAMES 62
+  DATA.NUM_FRAMES 62 \
+  MODEL.NUM_CLASSES 3 \
+  DATA.TRAIN_CROP_SIZE 512
